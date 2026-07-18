@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Movie = require('../models/Movie');
 const WatchEvent = require('../models/WatchEvent');
 const { removeUploadedFile } = require('../middleware/uploadMiddleware');
+const Category = require('../models/Category');
 
 const MAX_LIST_ITEMS = 250;
 
@@ -134,6 +135,7 @@ exports.createMovie = async (req, res, next) => {
         const payload = moviePayload(req.body);
         const validationError = validateMovie(payload);
         if (validationError) return res.status(400).json({ message: validationError });
+        if (!(await Category.exists({ name: payload.category }))) return res.status(400).json({ message: 'Choose a category from Screenly Console.' });
         const movie = await Movie.create({ ...payload, createdBy: req.user.id });
         res.status(201).json({ movie: publicMovie(movie, req) });
     } catch (error) {
@@ -147,6 +149,7 @@ exports.updateMovie = async (req, res, next) => {
         const payload = moviePayload(req.body);
         const validationError = validateMovie(payload);
         if (validationError) return res.status(400).json({ message: validationError });
+        if (!(await Category.exists({ name: payload.category }))) return res.status(400).json({ message: 'Choose a category from Screenly Console.' });
         const previous = await Movie.findById(req.params.id).lean();
         if (!previous) return res.status(404).json({ message: 'Movie not found' });
         const movie = await Movie.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });

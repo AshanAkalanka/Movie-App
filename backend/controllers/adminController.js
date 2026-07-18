@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Movie = require('../models/Movie');
 const WatchEvent = require('../models/WatchEvent');
+const Category = require('../models/Category');
 const fs = require('fs');
 const path = require('path');
 const { detectImageExtension, removeUploadedFile } = require('../middleware/uploadMiddleware');
@@ -18,6 +19,17 @@ const publicAdminUser = (user) => ({
 
 function escapeRegex(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function publicCategory(category, movieCount = 0) {
+    return {
+        id: String(category._id),
+        name: category.name,
+        description: category.description || '',
+        protected: Boolean(category.protected),
+        sortOrder: category.sortOrder || 0,
+        movieCount,
+    };
 }
 
 exports.getStats = async (req, res, next) => {
@@ -125,6 +137,75 @@ exports.deleteImage = async (req, res, next) => {
     try {
         const removed = await removeUploadedFile(req.body.path);
         res.json({ removed });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.listCategories = async (req, res, next) => {
+    try {
+        const [categories, counts] = await Promise.all([
+            Category.find().sort({ sortOrder: 1, name: 1 }).lean(),
+            Movie.aggregate([{ $group: { _id: '$category', count: { $sum: 1 } } }]),
+        ]);
+        const countMap = new Map(counts.map((item) => [item._id, item.count]));
+        res.json({ categories: categories.map((category) => publicCategory(category, countMap.get(category.name) || 0)) });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.createCategory = async (req, res, next) => {
+    try {
+        const name = String(req.body.name || '').trim().replace(/\s+/g, ' ');
+        const description = String(req.body.description || '').trim();
+        if (name.length < 2 || name.length > 60) return res.status(400).json({ message: 'Category names must contain 2 to 60 characters.' });
+        if (description.length > 240) return res.status(400).json({ message: 'Keep the category description under 240 characters.' });
+        const duplicate = await Category.findOne({ name: new RegExp(`^${escapeRegex(name)}$`, 'i') });
+        if (duplicate) return res.status(409).json({ message: 'That category already exists.' });
+        const category = await Category.create({ name, description, protected: false, sortOrder: 100, createdBy: req.user.id });
+        res.status(201).json({ category: publicCategory(category) });
+    } catch (error) {
+        if (error.code === 11000) return res.status(409).json({ message: 'That category already exists.' });
+        next(error);
+    }
+};
+
+exports.updateCategory = async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Category not found' });
+        const category = await Category.findById(req.params.id);
+        if (!category) return res.status(404).json({ message: 'Category not found' });
+        const nextName = String(req.body.name || category.name).trim().replace(/\s+/g, ' ');
+        const description = String(req.body.description ?? category.description).trim();
+        if (category.protected && nextName !== category.name) return res.status(400).json({ message: 'Built-in category names are kept to protect your current catalog.' });
+        if (nextName.length < 2 || nextName.length > 60) return res.status(400).json({ message: 'Category names must contain 2 to 60 characters.' });
+        const duplicate = await Category.findOne({ _id: mongoose.trusted({ $ne: category._id }), name: new RegExp(`^${escapeRegex(nextName)}$`, 'i') });
+        if (duplicate) return res.status(409).json({ message: 'That category already exists.' });
+        const previousName = category.name;
+        category.name = nextName;
+        category.description = description.slice(0, 240);
+        if (Number.isInteger(req.body.sortOrder)) category.sortOrder = req.body.sortOrder;
+        await category.save();
+        if (previousName !== nextName) await Movie.updateMany({ category: previousName }, { $set: { category: nextName } });
+        const movieCount = await Movie.countDocuments({ category: nextName });
+        res.json({ category: publicCategory(category, movieCount) });
+    } catch (error) {
+        if (error.code === 11000) return res.status(409).json({ message: 'That category already exists.' });
+        next(error);
+    }
+};
+
+exports.deleteCategory = async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Category not found' });
+        const category = await Category.findById(req.params.id);
+        if (!category) return res.status(404).json({ message: 'Category not found' });
+        if (category.protected) return res.status(400).json({ message: 'Built-in categories always remain available.' });
+        const movieCount = await Movie.countDocuments({ category: category.name });
+        if (movieCount) return res.status(400).json({ message: 'Move movies out of this category before removing it.' });
+        await category.deleteOne();
+        res.json({ message: 'Category removed successfully' });
     } catch (error) {
         next(error);
     }

@@ -93,6 +93,7 @@ async function startServer() {
         });
         console.log('MongoDB Connected');
         await require('./utils/ensureAdmin')();
+        await require('./utils/ensureCategories')();
         app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     } catch (err) {
         console.error('MongoDB connection error:', err.message);
