@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true, select: false },
     phone: { type: String, default: '', maxlength: 30 },
     address: { type: String, default: '', maxlength: 300 },
-    profileImage: { type: String, default: '' },
+    profileImage: { type: String, default: '', maxlength: 40, match: /^(?:|sticker:(?:popcorn|rocket|star|film|fox|panda|robot|ghost|unicorn|cool))$/ },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     suspended: { type: Boolean, default: false, index: true },
     lastLoginAt: { type: Date, default: null },

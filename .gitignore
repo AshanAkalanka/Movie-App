@@ -21,9 +21,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Backend runtime uploads
+# User/admin uploaded media (local runtime data — never commit)
 backend/uploads/
 backend/upload/
+backend/public/uploads/
+mobile/uploads/
+mobile/public/uploads/
+public/uploads/
 /uploads/
 /upload/
 

@@ -14,6 +14,7 @@ export default function RootLayout() {
                     <Stack.Screen name="movie/[id]" />
                     <Stack.Screen name="watch/[id]" options={{ gestureEnabled: false }} />
                     <Stack.Screen name="admin-movie" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="account-settings" options={{ presentation: 'modal' }} />
                     <Stack.Screen name="login" options={{ presentation: 'modal' }} />
                     <Stack.Screen name="register" options={{ presentation: 'modal' }} />
                 </Stack>

@@ -5,6 +5,21 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const BCRYPT_ROUNDS = 12;
 const MIN_PASSWORD_LENGTH = 10;
+const PROFILE_STICKERS = new Set(['', 'sticker:popcorn', 'sticker:rocket', 'sticker:star', 'sticker:film', 'sticker:fox', 'sticker:panda', 'sticker:robot', 'sticker:ghost', 'sticker:unicorn', 'sticker:cool']);
+
+function createSessionToken(user) {
+    return jwt.sign(
+        { tokenVersion: user.tokenVersion },
+        process.env.JWT_SECRET,
+        {
+            subject: String(user._id),
+            expiresIn: '12h',
+            issuer: 'screenly-api',
+            audience: 'screenly-mobile',
+            algorithm: 'HS256',
+        }
+    );
+}
 
 const publicUser = (user) => ({
     id: user._id,
@@ -75,17 +90,7 @@ exports.login = async (req, res) => {
         user.lastLoginAt = new Date();
         await user.save();
 
-        const token = jwt.sign(
-            { tokenVersion: user.tokenVersion },
-            process.env.JWT_SECRET,
-            {
-                subject: String(user._id),
-                expiresIn: '12h',
-                issuer: 'screenly-api',
-                audience: 'screenly-mobile',
-                algorithm: 'HS256',
-            }
-        );
+        const token = createSessionToken(user);
 
         res.json({
             token,
@@ -112,12 +117,16 @@ exports.updateProfile = async (req, res) => {
         const email = String(req.body.email || '').trim().toLowerCase();
         const phone = String(req.body.phone || '').trim();
         const address = String(req.body.address || '').trim();
+        const profileImage = String(req.body.profileImage || '').trim();
 
         if (!name || !email) {
             return res.status(400).json({ message: 'Name and email are required' });
         }
         if (!/^\S+@\S+\.\S+$/.test(email) || name.length > 80 || email.length > 160 || phone.length > 30 || address.length > 300) {
             return res.status(400).json({ message: 'Invalid profile details' });
+        }
+        if (!PROFILE_STICKERS.has(profileImage)) {
+            return res.status(400).json({ message: 'Choose a Screenly profile sticker.' });
         }
 
         const existingEmail = await User.findOne({ email, _id: mongoose.trusted({ $ne: req.user.id }) });
@@ -130,6 +139,7 @@ exports.updateProfile = async (req, res) => {
             email,
             phone: phone || '',
             address: address || '',
+            profileImage,
         };
 
         const user = await User.findByIdAndUpdate(req.user.id, profileData, { new: true, runValidators: true }).select('-password -tokenVersion');
@@ -153,6 +163,9 @@ exports.changePassword = async (req, res) => {
         if (newPassword.length < MIN_PASSWORD_LENGTH || newPassword.length > 72 || currentPassword.length > 72) {
             return res.status(400).json({ message: 'New password must contain 10 to 72 characters' });
         }
+        if (currentPassword === newPassword) {
+            return res.status(400).json({ message: 'Choose a new password that is different from your current password' });
+        }
 
         const user = await User.findById(req.user.id).select('+password');
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -164,7 +177,7 @@ exports.changePassword = async (req, res) => {
         user.tokenVersion += 1;
         await user.save();
 
-        res.json({ message: 'Password changed successfully' });
+        res.json({ message: 'Password changed successfully', token: createSessionToken(user) });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }

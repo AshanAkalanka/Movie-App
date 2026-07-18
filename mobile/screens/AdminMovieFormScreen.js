@@ -96,7 +96,7 @@ export default function AdminMovieFormScreen() {
                         <ArtworkPicker label="Backdrop" value={form.backdropUrl} aspect="backdrop" uploading={uploadingField === 'backdropUrl'} onPick={() => pickImage('backdropUrl')} onRemove={() => removeImage('backdropUrl')} />
                     </View>
                     <Text style={styles.artworkHelp}>Choose images from your phone. JPG, PNG, and WebP files up to 8 MB are supported.</Text>
-                    <Field label="YouTube watch or embed link *" value={form.youtubeUrl} onChangeText={(value) => change('youtubeUrl', value)} placeholder="https://www.youtube.com/watch?v=..." autoCapitalize="none" keyboardType="url" help="Supports watch, youtu.be, Shorts, Live, and /embed/ links." />
+                    <Field label="YouTube link or iframe code *" value={form.youtubeUrl} onChangeText={(value) => change('youtubeUrl', value)} placeholder={'Paste a YouTube URL or <iframe ...></iframe>'} autoCapitalize="none" help="You can paste the complete YouTube embed code. Screenly safely extracts the video automatically." />
 
                     <Text style={styles.sectionTitle}>Movie information</Text>
                     <Field label="Movie name *" value={form.title} onChangeText={(value) => change('title', value)} placeholder="Movie title" maxLength={140} />
@@ -111,7 +111,7 @@ export default function AdminMovieFormScreen() {
                     <Field label="Display order" value={form.sortOrder} onChangeText={(value) => change('sortOrder', value)} placeholder="0" keyboardType="number-pad" help="Lower numbers appear first inside a category." />
 
                     <Text style={styles.sectionTitle}>Availability</Text>
-                    <ToggleRow title="Featured movie" subtitle="Also show this poster in the Featured row." value={form.featured} onValueChange={(value) => change('featured', value)} />
+                    <ToggleRow title="Show in Home hero" subtitle="Featured movies rotate in the large Home banner and also appear in the Featured row." value={form.featured} onValueChange={(value) => change('featured', value)} />
                     <ToggleRow title="Published" subtitle="Turn off to keep the movie as an admin-only draft." value={form.published} onValueChange={(value) => change('published', value)} />
                     {error ? <View style={styles.errorBox}><Ionicons name="alert-circle-outline" size={19} color="#ff858c" /><Text style={styles.error}>{error}</Text></View> : null}
                     <Pressable style={[styles.submit, saving && styles.disabled]} disabled={saving} onPress={submit}>{saving ? <ActivityIndicator color="#fff" /> : <><Ionicons name="checkmark-circle-outline" size={21} color="#fff" /><Text style={styles.submitText}>{editing ? 'Save Changes' : 'Add to Screenly'}</Text></>}</Pressable>

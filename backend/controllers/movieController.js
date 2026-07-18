@@ -14,8 +14,10 @@ function cleanList(value, maxItems = 30) {
 function youtubeVideoId(value) {
     const input = String(value || '').trim();
     if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
+    const iframeSource = input.match(/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/i)?.[1];
+    const candidate = String(iframeSource || input).replace(/&amp;/gi, '&');
     try {
-        const url = new URL(input);
+        const url = new URL(candidate);
         const host = url.hostname.toLowerCase().replace(/^www\./, '');
         let id = '';
         if (host === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] || '';

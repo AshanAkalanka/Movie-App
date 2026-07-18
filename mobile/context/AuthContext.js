@@ -57,7 +57,28 @@ export function AuthProvider({ children }) {
         setUser(null);
     }, []);
 
-    const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading, login, register, logout]);
+    const updateProfile = useCallback(async ({ name, profileImage }) => {
+        if (!user) throw new Error('Sign in to update your profile.');
+        const response = await api.put('/auth/profile', {
+            name: name.trim(),
+            email: user.email,
+            phone: user.phone || '',
+            address: user.address || '',
+            profileImage: profileImage || '',
+        });
+        const updatedUser = { ...user, ...response.data, id: response.data.id || response.data._id || user.id };
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        return updatedUser;
+    }, [user]);
+
+    const changePassword = useCallback(async (currentPassword, newPassword) => {
+        const response = await api.put('/auth/change-password', { currentPassword, newPassword });
+        if (response.data.token) await setSessionToken(response.data.token);
+        return response.data.message;
+    }, []);
+
+    const value = useMemo(() => ({ user, loading, login, register, logout, updateProfile, changePassword }), [user, loading, login, register, logout, updateProfile, changePassword]);
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

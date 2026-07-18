@@ -11,6 +11,7 @@ const publicAdminUser = (user) => ({
     id: String(user._id),
     name: user.name,
     email: user.email,
+    profileImage: user.profileImage || '',
     role: user.role,
     suspended: Boolean(user.suspended),
     createdAt: user.createdAt,
