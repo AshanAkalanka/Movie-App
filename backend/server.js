@@ -48,7 +48,7 @@ app.use('/uploads', (req, res, next) => {
     next();
 }, express.static(path.resolve(__dirname, 'uploads'), {
     dotfiles: 'deny',
-    fallthrough: false,
+    fallthrough: true,
     immutable: true,
     index: false,
     maxAge: '7d',
