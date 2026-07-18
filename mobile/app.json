@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Screenly",
+    "slug": "screenly",
+    "version": "1.0.0",
+    "description": "A custom movie catalog with personal lists, in-app playback, and administrator tools.",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.png",
+    "scheme": "screenly",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050507"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.screenly.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Screenly to choose movie posters and backdrops from your photo library.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
